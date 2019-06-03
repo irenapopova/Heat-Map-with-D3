@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Free Web tutorials">
+  <meta name="keywords" content="HTML,CSS,JavaScript">
+  <meta name="author" content="Irena Popova">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title></title>
+</head>
+
+<body>
+  <div class="main">
+    <div class='container'>
+      <h3 id='title'>Monthly Global Land-Surface Temperature</h3>
+    </div>
+  </div>
+  <script>
+    const w = 1500;
+    const h = 400;
+    const padding = 60;
+
+    const svg = d3.select("body")
+      .append("svg")
+      .attr("width", w)
+      .attr("height", h);
+
+    const div = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .attr("id", "tooltip")
+      .style("opacity", 0);
+
+
+    d3.json('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/global-temperature.json', function (json) {
+
+      // description
+
+      const description = d3.select("#title")
+        .append("h4")
+        .attr("id", "description")
+        .html(json.monthlyVariance[0].year + " - " + json.monthlyVariance[json.monthlyVariance.length - 1].year + ": base temperature " + json.baseTemperature + "º C");
+
+      // Axis
+
+      const yScale = d3.scale.ordinal()
+        .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+        .rangeRoundBands([0, h - padding], 0, 0);
+
+      const yAxis = d3.svg.axis()
+        .scale(yScale)
+        .tickValues(yScale.domain())
+        .tickFormat((month) => {
+          const date = new Date(0);
+          date.setUTCMonth(month);
+          return d3.time.format.utc("%B")(date);
+        })
+        .orient("left")
+        .tickSize(10, 1);
+
+      svg.append("g")
+        .attr("id", "y-axis")
+        .attr("transform", "translate(" + padding + ",0)")
+        .call(yAxis)
+
+      const xScale = d3.scale.ordinal()
+        .domain(json.monthlyVariance.map((d) => d.year))
+        .rangeRoundBands([padding, w - padding], 0, 0);
+
+      const xAxis = d3.svg.axis()
+        .scale(xScale)
+        .tickValues(xScale.domain().filter((year) => {
+          return year % 10 === 0;
+        }))
+        .tickFormat((year) => {
+          const date = new Date(0);
+          date.setUTCFullYear(year)
+          return d3.time.format.utc("%Y")(date);
+        })
+        .orient("bottom")
+        .tickSize(10, 1);
+
+      svg.append("g")
+        .attr("id", "x-axis")
+        .attr("transform", "translate(0," + (h - padding) + ")")
+        .call(xAxis)
+
+      // legend
+
+      const colors = ["#006aff", "#9fc5fc", "#f5fc9f", "#f9b302"]
+      const legend = d3.select("body")
+        .append("svg")
+        .attr("id", "legend")
+        .attr("height", 50);
+
+      legend.selectAll("rect")
+        .data(colors)
+        .enter()
+        .append("rect")
+        .attr("x", (d, i) => i * 30)
+        .attr("y", 0)
+        .attr("width", 30)
+        .attr("height", 20)
+        .attr("fill", (d) => d);
+
+      const legendXScale = d3.scale.linear()
+        .domain([1.6, 13.8])
+        .range([0, 120]);
+
+      const legendXAxis = d3.svg.axis()
+        .tickSize(0)
+        .scale(legendXScale)
+        .tickValues(["4.65", "7.7", "10.75"])
+        .tickFormat((d) => (d))
+        .orient("bottom");
+
+      legend.append("g")
+        .attr("transform", "translate(0, 20)")
+        .call(legendXAxis);
+
+      // map
+
+      svg.append("g")
+        .selectAll("rect")
+        .data(json.monthlyVariance)
+        .enter()
+        .append("rect")
+        .attr("class", "cell")
+        .attr('data-month', (d) => d.month - 1)
+        .attr('data-year', (d) => d.year)
+        .attr('data-temp', (d) => json.baseTemperature + d.variance)
+        .attr("x", (d, i) => xScale(d.year))
+        .attr("y", (d, i) => yScale(d.month))
+        .attr("width", (d) => xScale.rangeBand(d.year))
+        .attr("height", (d, i) => yScale.rangeBand(d.month))
+        .attr("fill", (d) => {
+          if (json.baseTemperature + d.variance > 0 && json.baseTemperature + d.variance < 4.65) {
+            return colors[0];
+          } else if (json.baseTemperature + d.variance > 4.65 && json.baseTemperature + d.variance < 7.7) {
+            return colors[1];
+          } else if (json.baseTemperature + d.variance > 7.7 && json.baseTemperature + d.variance < 10.75) {
+            return colors[2];
+          } else {
+            return colors[3];
+          }
+        })
+        .on("mousemove", function (d, i) {
+          div.style("opacity", 9);
+          const date = new Date(d.year, d.month);
+          div.html(d3.time.format("%Y - %B")(date) + "</br>"
+            + d3.format(".1f")(json.baseTemperature + d.variance) + "º C" + "</br>"
+            + d3.format("+.1f")(d.variance) + "º C")
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px")
+            .attr("data-year", d.year);
+        })
+        .on("mouseout", function (d) {
+          div.style("opacity", 0);
+        })
+    });
+
+  </script>
+</body>
+
+</html>

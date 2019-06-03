@@ -1,0 +1,29 @@
+body {
+  text-align: center;
+  font-size: 24px;
+}
+
+#y-axis {
+  font-size: 10px;
+}
+
+#x-axis {
+  font-size: 10px;
+}
+
+#legend {
+  font-size: 12px;
+}
+
+.cell:hover {
+  fill: green;
+}
+
+div.tooltip {	
+    position: absolute;		    				
+    font: 12px sans-serif;		
+    background: white;	
+    border: 1px;		
+    border-radius: 8px;			
+    pointer-events: none;			
+}
